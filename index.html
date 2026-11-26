@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Al Sayyed Poultry</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0B6B5B">
+<style>
+:root{--g:#0B6B5B;--gd:#064A3F;--soft:#E1F0EC;--yolk:#E8A317;--yolk-s:#FCF1D6;--bg:#F1F4F3;--ink:#10201D;--mut:#68807A;--line:#E1E8E6;--red:#B3261E;--ok:#1B7A4B}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{background:var(--g);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;justify-content:space-between;align-items:baseline;position:sticky;top:0;z-index:5}
+header b{font-size:18px;letter-spacing:.2px}header small{opacity:.85;font-size:12px}
+#upd{display:none;background:var(--yolk);color:#3A2800;padding:10px 16px;justify-content:space-between;align-items:center;font-weight:600}
+#upd button{background:#3A2800;color:#fff;border:0;border-radius:8px;padding:6px 12px;font-weight:700}
+main{padding:12px;max-width:560px;margin:0 auto}
+.screen{display:none}.screen.on{display:block}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--line)}
+h3{margin:0 0 10px;font-size:15px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat span{display:block;font-size:12px;color:var(--mut)}
+.stat b{font-size:22px;font-variant-numeric:tabular-nums}
+.stat.big{grid-column:1/-1;background:var(--yolk-s);border-color:#F0D58A}.stat.big b{font-size:34px;color:#7A4E00}
+.stat.red b{color:var(--red)}.stat.ok b{color:var(--ok)}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:12px;border:1.5px solid #CBD7D4;border-radius:11px;font:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--g);border-color:var(--g)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;cursor:pointer}
+.btn{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:var(--g);color:#fff;font-weight:700;font-size:16px}
+.ghost{background:var(--soft);color:var(--gd)}
+.sm{width:auto;margin:0;padding:6px 11px;border-radius:9px;font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}.row small{color:var(--mut);display:block}
+.x{background:none;border:0;color:var(--red);font-size:17px;padding:4px 8px}
+.due{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums}
+.empty{color:var(--mut);text-align:center;padding:14px 0}
+.note{font-size:12px;color:var(--mut);margin-top:6px}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav button{background:none;border:0;padding:9px 2px 8px;color:var(--mut);font-size:11px;font-weight:600}
+nav button i{display:block;font-style:normal;font-size:20px}
+nav button.on{color:var(--g)}nav button.on i{transform:translateY(-1px)}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:20;align-items:flex-end}
+#modal.on{display:flex}
+#sheet{background:#fff;width:100%;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+</style>
+</head>
+<body>
+<header><b>🥚 Al Sayyed Poultry</b><small><span id="cloud"></span> <span id="hd"></span></small></header>
+<div id="upd"><span>Naya version aa gaya hai</span><button onclick="location.reload()">Refresh</button></div>
+<main>
+
+<section id="s-home" class="screen on">
+  <div class="grid">
+    <div class="stat big"><span>Baqi anday (stock)</span><b id="hStock">0</b></div>
+    <div class="stat"><span>Aaj anday huay</span><b id="hCol">0</b></div>
+    <div class="stat"><span>Aaj bika (pcs)</span><b id="hSold">0</b></div>
+    <div class="stat"><span>Aaj ki bikri</span><b id="hAmt">Rs 0</b></div>
+    <div class="stat ok"><span>Aaj paisa mila</span><b id="hRecv">Rs 0</b></div>
+    <div class="stat red"><span>Total udhaar</span><b id="hDue">Rs 0</b></div>
+    <div class="stat"><span>Is mahine ki bachat</span><b id="hProfit">Rs 0</b></div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Aaj ki entries</h3><div id="hList"></div></div>
+</section>
+
+<section id="s-egg" class="screen">
+  <div class="card">
+    <h3>🥚 Roz ke anday likhein</h3>
+    <label>Tareekh</label><input type="date" id="eDate">
+    <label>Kis group ke</label><select id="eFlock"></select>
+    <label>Kitne anday huay</label><input type="number" id="eQty" inputmode="numeric" min="0" placeholder="0">
+    <div class="two">
+      <div><label>Toote / kharab</label><input type="number" id="eBroken" inputmode="numeric" min="0" placeholder="0"></div>
+      <div><label>Ghar ke liye</label><input type="number" id="eHome" inputmode="numeric" min="0" placeholder="0"></div>
+    </div>
+    <button class="btn" onclick="saveEgg()">Anday Save Karein</button>
+  </div>
+  <div class="card"><h3>Pichli entries</h3><div id="eList"></div></div>
+</section>
+
+<section id="s-sale" class="screen">
+  <div class="card">
+    <h3>💰 Anday ki bikri</h3>
+    <label>Tareekh</label><input type="date" id="sDate">
+    <label>Customer (udhaar ho to naam zaroor likhein)</label>
+    <input id="sCust" list="custList" placeholder="Khali = naqad" autocomplete="off"><datalist id="custList"></datalist>
+    <div class="two">
+      <div><label>Kitne anday</label><input type="number" id="sQty" inputmode="numeric" min="0" oninput="calcSale()"></div>
+      <div><label>Rate (ek anda)</label><input type="number" id="sRate" inputmode="decimal" min="0" oninput="calcSale()"></div>
+    </div>
+    <label>Kitne paise mile</label><input type="number" id="sPaid" inputmode="decimal" min="0" oninput="paidTouched=true;calcSale()">
+    <div class="note" id="sNote">Total: Rs 0</div>
+    <button class="btn" onclick="saveSale()">Bikri Save Karein</button>
+  </div>
+  <div class="card"><h3>Pichli bikri</h3><div id="sList"></div></div>
+</section>
+
+<section id="s-khata" class="screen">
+  <div class="stat red" style="margin-bottom:12px"><span>Total udhaar baqi</span><b id="kTotal">Rs 0</b></div>
+  <div class="card"><h3>📒 Udhaar wale log</h3><div id="kList"></div></div>
+  <div class="card">
+    <h3>Purana baqaya darj karein</h3>
+    <div class="two">
+      <div><label>Naam</label><input id="oName"></div>
+      <div><label>Baqaya (Rs)</label><input type="number" id="oAmt" inputmode="decimal"></div>
+    </div>
+    <button class="btn ghost" onclick="saveOpening()">Darj Karein</button>
+  </div>
+</section>
+
+<section id="s-more" class="screen">
+  <div class="card">
+    <h3>🧾 Kharcha</h3>
+    <div class="two">
+      <div><label>Qism</label><select id="xCat"><option>Feed</option><option>Dawai / Vaccine</option><option>Bijli / Pani</option><option>Mazdoori</option><option>Doosra</option></select></div>
+      <div><label>Rakam (Rs)</label><input type="number" id="xAmt" inputmode="decimal"></div>
+    </div>
+    <label>Note (optional)</label><input id="xNote" placeholder="e.g. 50kg National 13">
+    <button class="btn" onclick="saveExp()">Kharcha Save Karein</button>
+    <div id="xList" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h3>🐔 Murghiyan (group-wise)</h3>
+    <div class="two">
+      <div><label>Group ka naam</label><input id="fName" placeholder="White Leghorn"></div>
+      <div><label>Kitni hain</label><input type="number" id="fCount" inputmode="numeric"></div>
+    </div>
+    <button class="btn ghost" onclick="saveFlock()">Group Add Karein</button>
+    <div id="fList" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="cloudCard">
+    <h3>☁️ Cloud Sync</h3>
+    <div id="cOut">
+      <p class="note" style="margin-top:0">Login kar lein to data online bhi mehfooz rahega aur doosre phone par bhi nazar aayega. Internet na ho to app pehle ki tarah chalti rahegi.</p>
+      <label>Email</label><input type="email" id="cEmail" autocomplete="username">
+      <label>Password (kam az kam 6 harf)</label><input type="password" id="cPass" autocomplete="current-password">
+      <button class="btn" onclick="cloudLogin()">Login / Naya Account</button>
+    </div>
+    <div id="cIn" style="display:none">
+      <div id="cStat"></div>
+      <button class="btn" onclick="syncNow(true)">Abhi Sync Karein</button>
+      <button class="btn ghost" onclick="cloudLogout()">Logout</button>
+    </div>
+    <div class="note" id="cMsg"></div>
+  </div>
+  <div class="card">
+    <h3>💾 Backup &amp; Offline</h3>
+    <p class="note" style="margin-top:0">Data sirf is phone mein mehfooz hai. Hafte mein ek dafa backup zaroor download karein.</p>
+    <button class="btn" onclick="backup()">Backup File Download Karein</button>
+    <label>Backup wapas load karein</label><input type="file" id="rFile" accept=".json,application/json" onchange="restore(this)">
+    <div class="note" id="offState" style="margin-top:12px"></div>
+    <button class="btn ghost" onclick="checkUpdate()">Naya Version Check Karein</button>
+    <div class="note" style="text-align:center">Version <b id="ver"></b></div>
+  </div>
+</section>
+</main>
+
+<div id="modal" onclick="if(event.target===this)closeM()"><div id="sheet"></div></div>
+
+<nav id="nav">
+  <button data-t="home" class="on"><i>🏠</i>Aaj</button>
+  <button data-t="egg"><i>🥚</i>Anday</button>
+  <button data-t="sale"><i>💰</i>Bikri</button>
+  <button data-t="khata"><i>📒</i>Khata</button>
+  <button data-t="more"><i>⚙️</i>Aur</button>
+</nav>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const VER = '1.1', KEY = 'alsayyed_poultry_v1';
+const $ = id => document.getElementById(id);
+const rs = n => 'Rs ' + Math.round(n || 0).toLocaleString('en-US');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function today(){ let t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0, 10); }
+function nice(ds){ let p = ds.split('-'); return p[2] + '-' + p[1] + '-' + p[0]; }
+
+let d = load(), paidTouched = false, names = [];
+let fbOK = false, auth, db, user = null, syncing = false, again = false, syncT = null, lastSync = 0, cloudErr = '';
+function load(){
+  try{ let r = JSON.parse(localStorage.getItem(KEY)); if(r && Array.isArray(r.eggs)) return fix(r); }catch(e){}
+  return fix({});
+}
+function fix(r){
+  ['eggs','sales','pays','exps','flocks'].forEach(k => { if(!Array.isArray(r[k])) r[k] = []; });
+  if(!r.del || typeof r.del !== 'object') r.del = {};
+  r.lastRate = +r.lastRate || 0; return r;
+}
+function localSave(){
+  try{ localStorage.setItem(KEY, JSON.stringify(d)); }
+  catch(e){ alert('Data save nahi hua! Phone mein jagah kam ho sakti hai. Abhi Backup download karein.'); }
+}
+function save(){ localSave(); clearTimeout(syncT); syncT = setTimeout(() => syncNow(), 1500); }
+
+/* ---------- hisab ---------- */
+function stock(){
+  let s = 0;
+  d.eggs.forEach(e => s += e.qty - e.broken - e.home);
+  d.sales.forEach(x => s -= x.qty);
+  return s;
+}
+function khata(){
+  let m = {};
+  d.sales.forEach(x => { if(x.cust) m[x.cust] = (m[x.cust] || 0) + x.qty * x.rate - x.paid; });
+  d.pays.forEach(p => { m[p.cust] = (m[p.cust] || 0) - p.amt; });
+  return m;
+}
+
+/* ---------- tabs ---------- */
+function show(t){
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 's-' + t));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  window.scrollTo(0, 0); renderAll();
+}
+$('nav').addEventListener('click', e => { let b = e.target.closest('button'); if(b) show(b.dataset.t); });
+
+/* ---------- rows ---------- */
+const xbtn = (k, id) => `<button class="x" onclick="del('${k}','${id}')">✕</button>`;
+function eggRow(e){
+  let bits = [e.qty + ' anday'];
+  if(e.broken) bits.push(e.broken + ' toote');
+  if(e.home) bits.push(e.home + ' ghar');
+  return `<div class="row"><div><b>🥚 ${bits.join(', ')}</b><small>${nice(e.date)} • ${esc(e.flock || 'Sab')}</small></div>${xbtn('eggs', e.id)}</div>`;
+}
+function saleRow(x){
+  let tot = x.qty * x.rate, bal = tot - x.paid;
+  return `<div class="row"><div><b>💰 ${x.qty} × ${rs(x.rate)} = ${rs(tot)}</b><small>${nice(x.date)} • ${esc(x.cust || 'Naqad')}${bal > 0 ? ' • <span class="due">baqi ' + rs(bal) + '</span>' : ''}</small></div>${xbtn('sales', x.id)}</div>`;
+}
+function del(k, id){
+  if(!confirm('Ye entry hata dein?')) return;
+  d[k] = d[k].filter(x => x.id !== id); d.del[id] = Date.now(); save(); renderAll();
+}
+const last = (a, n) => a.slice().sort((p, q) => (q.ts || 0) - (p.ts || 0)).slice(0, n);
+
+/* ---------- render ---------- */
+function renderAll(){
+  $('hd').textContent = nice(today());
+  $('ver').textContent = VER;
+  let t = today(), m = t.slice(0, 7);
+
+  let col = 0, sold = 0, amt = 0, recv = 0, sm = 0, em = 0;
+  d.eggs.forEach(e => { if(e.date === t) col += e.qty; });
+  d.sales.forEach(x => {
+    if(x.date === t){ sold += x.qty; amt += x.qty * x.rate; recv += x.paid; }
+    if(x.date.slice(0, 7) === m) sm += x.qty * x.rate;
+  });
+  d.pays.forEach(p => { if(p.date === t && p.amt > 0) recv += p.amt; });
+  d.exps.forEach(x => { if(x.date.slice(0, 7) === m) em += x.amt; });
+  let k = khata(), due = 0;
+  Object.keys(k).forEach(n => { if(k[n] > 0) due += k[n]; });
+
+  $('hStock').textContent = stock();
+  $('hCol').textContent = col; $('hSold').textContent = sold;
+  $('hAmt').textContent = rs(amt); $('hRecv').textContent = rs(recv);
+  $('hDue').textContent = rs(due); $('hProfit').textContent = rs(sm - em);
+
+  let tl = d.eggs.filter(e => e.date === t).map(eggRow).join('') + d.sales.filter(x => x.date === t).map(saleRow).join('');
+  $('hList').innerHTML = tl || '<div class="empty">Aaj abhi koi entry nahi. Neeche "Anday" ya "Bikri" se shuru karein.</div>';
+
+  $('eList').innerHTML = last(d.eggs, 10).map(eggRow).join('') || '<div class="empty">Abhi koi entry nahi</div>';
+  $('sList').innerHTML = last(d.sales, 10).map(saleRow).join('') || '<div class="empty">Abhi koi bikri nahi</div>';
+
+  let fl = '<option value="">Sab / mix</option>' + d.flocks.map(f => `<option>${esc(f.name)}</option>`).join('');
+  if($('eFlock').dataset.sig !== fl){ $('eFlock').innerHTML = fl; $('eFlock').dataset.sig = fl; }
+
+  names = Object.keys(k).sort((a, b) => k[b] - k[a]);
+  $('custList').innerHTML = names.map(n => `<option value="${esc(n)}">`).join('');
+  $('kTotal').textContent = rs(due);
+  $('kList').innerHTML = names.filter(n => Math.abs(k[n]) >= 1).map(n =>
+    `<div class="row" onclick="openKhata(${names.indexOf(n)})" style="cursor:pointer"><div><b>${esc(n)}</b><small>Tap karke hisab dekhein</small></div><span class="${k[n] > 0 ? 'due' : ''}">${k[n] > 0 ? rs(k[n]) : 'Advance ' + rs(-k[n])}</span></div>`
+  ).join('') || '<div class="empty">Koi udhaar baqi nahi</div>';
+
+  $('xList').innerHTML = last(d.exps, 6).map(x =>
+    `<div class="row"><div><b>${esc(x.cat)} — ${rs(x.amt)}</b><small>${nice(x.date)}${x.note ? ' • ' + esc(x.note) : ''}</small></div>${xbtn('exps', x.id)}</div>`).join('');
+  let birds = d.flocks.reduce((a, f) => a + f.count, 0);
+  $('fList').innerHTML = d.flocks.map(f =>
+    `<div class="row"><div><b>${esc(f.name)}</b><small>${f.count} murghiyan</small></div><div><button class="ghost sm" onclick="flockAdj('${f.id}',-1)">−</button> <button class="ghost sm" onclick="flockAdj('${f.id}',1)">+</button>${xbtn('flocks', f.id)}</div></div>`).join('')
+    + (d.flocks.length ? `<div class="note">Kul murghiyan: <b>${birds}</b>. Koi murghi mar jaye to − dabayen.</div>` : '');
+  calcSale(); cloudUI();
+  if(navigator.serviceWorker) $('offState').innerHTML = navigator.serviceWorker.controller
+    ? '<b style="color:var(--ok)">✓ Offline tayyar hai — internet na ho to bhi khulegi</b>'
+    : 'Offline tayyari: ek dafa internet par app khol kar page refresh karein.';
+}
+
+/* ---------- entries ---------- */
+function saveEgg(){
+  let qty = Math.max(0, Math.floor(+$('eQty').value || 0)), br = Math.max(0, Math.floor(+$('eBroken').value || 0)), hm = Math.max(0, Math.floor(+$('eHome').value || 0));
+  if(!qty) return alert('Kitne anday huay woh likhein.');
+  if(br + hm > qty && !confirm('Toote + ghar wale anday, kul anday se zyada hain. Phir bhi save karein?')) return;
+  d.eggs.push({id: uid(), ts: Date.now(), date: $('eDate').value || today(), flock: $('eFlock').value, qty, broken: br, home: hm});
+  save(); ['eQty','eBroken','eHome'].forEach(i => $(i).value = ''); renderAll();
+  alert('✅ ' + qty + ' anday darj ho gaye.');
+}
+function calcSale(){
+  let q = +$('sQty').value || 0, r = +$('sRate').value || 0, tot = q * r;
+  if(!paidTouched) $('sPaid').value = tot ? tot : '';
+  let paid = $('sPaid').value === '' ? tot : +$('sPaid').value, bal = tot - paid;
+  $('sNote').innerHTML = `Total: <b>${rs(tot)}</b>` + (bal > 0 ? ` • Udhaar: <b class="due">${rs(bal)}</b>` : '') + ` • Stock baqi: ${stock()}`;
+}
+function saveSale(){
+  let q = Math.floor(+$('sQty').value || 0), r = +$('sRate').value || 0, cust = $('sCust').value.trim(), tot = q * r;
+  let paid = $('sPaid').value === '' ? tot : +$('sPaid').value;
+  if(q <= 0 || r <= 0) return alert('Anday aur rate dono likhein.');
+  if(paid > tot) return alert('Mile huay paise total se zyada hain. Purana udhaar wapas mile to Khata se likhein.');
+  if(paid < tot && !cust) return alert('Udhaar ke liye customer ka naam likhein.');
+  if(q > stock() && !confirm('Stock mein sirf ' + stock() + ' anday hain. Phir bhi save karein?')) return;
+  d.sales.push({id: uid(), ts: Date.now(), date: $('sDate').value || today(), cust, qty: q, rate: r, paid});
+  d.lastRate = r; save();
+  $('sQty').value = ''; $('sPaid').value = ''; $('sCust').value = ''; paidTouched = false; renderAll();
+}
+function saveOpening(){
+  let n = $('oName').value.trim(), a = +$('oAmt').value || 0;
+  if(!n || a <= 0) return alert('Naam aur baqaya likhein.');
+  d.pays.push({id: uid(), ts: Date.now(), date: today(), cust: n, amt: -a, note: 'Purana baqaya'});
+  save(); $('oName').value = ''; $('oAmt').value = ''; renderAll();
+}
+function saveExp(){
+  let a = +$('xAmt').value || 0;
+  if(a <= 0) return alert('Rakam likhein.');
+  d.exps.push({id: uid(), ts: Date.now(), date: today(), cat: $('xCat').value, amt: a, note: $('xNote').value.trim()});
+  save(); $('xAmt').value = ''; $('xNote').value = ''; renderAll();
+}
+function saveFlock(){
+  let n = $('fName').value.trim(), c = Math.floor(+$('fCount').value || 0);
+  if(!n || c <= 0) return alert('Group ka naam aur tadaad likhein.');
+  d.flocks.push({id: uid(), name: n, count: c, u: Date.now()}); save(); $('fName').value = ''; $('fCount').value = ''; renderAll();
+}
+function flockAdj(id, n){
+  let f = d.flocks.find(x => x.id === id); if(!f) return;
+  f.count = Math.max(0, f.count + n); f.u = Date.now(); save(); renderAll();
+}
+
+/* ---------- khata detail ---------- */
+function openKhata(i){
+  let n = names[i]; if(n == null) return;
+  let k = khata()[n] || 0, tx = [];
+  d.sales.filter(x => x.cust === n).forEach(x => tx.push({ts: x.ts, date: x.date, t: `${x.qty} anday × ${rs(x.rate)}`, a: x.qty * x.rate - x.paid, note: x.paid ? 'mila ' + rs(x.paid) : ''}));
+  d.pays.filter(p => p.cust === n).forEach(p => tx.push({ts: p.ts, date: p.date, t: p.amt > 0 ? 'Wasooli' : (p.note || 'Baqaya'), a: -p.amt, note: ''}));
+  tx.sort((a, b) => b.ts - a.ts);
+  let msg = `Assalam o Alaikum ${n}, Al Sayyed Poultry ka ${rs(k)} aap par baqi hai. Meherbani karke ada kar dein. Shukriya!`;
+  $('sheet').innerHTML = `<div class="row" style="border:0"><h3 style="margin:0">${esc(n)}</h3><button class="x" onclick="closeM()">✕</button></div>
+    <div class="stat ${k > 0 ? 'red' : 'ok'}"><span>${k > 0 ? 'Baqi udhaar' : 'Hisab saaf / advance'}</span><b>${rs(Math.abs(k))}</b></div>
+    <label>Wasooli (Rs)</label><input type="number" id="wAmt" inputmode="decimal" placeholder="Kitne paise mile">
+    <button class="btn" onclick="savePay(${i})">Wasooli Save Karein</button>
+    <a href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener"><button class="btn ghost">💬 WhatsApp par yaad dahani</button></a>
+    <h3 style="margin-top:16px">Hisab ki tafseel</h3>` +
+    (tx.map(x => `<div class="row"><div><b>${esc(x.t)}</b><small>${nice(x.date)}${x.note ? ' • ' + x.note : ''}</small></div><span class="${x.a > 0 ? 'due' : ''}">${x.a > 0 ? '+' : '−'}${rs(Math.abs(x.a))}</span></div>`).join('') || '<div class="empty">Koi entry nahi</div>');
+  $('modal').classList.add('on');
+}
+function savePay(i){
+  let a = +$('wAmt').value || 0; if(a <= 0) return alert('Rakam likhein.');
+  d.pays.push({id: uid(), ts: Date.now(), date: today(), cust: names[i], amt: a});
+  save(); closeM(); renderAll();
+}
+function closeM(){ $('modal').classList.remove('on'); }
+
+/* ---------- backup ---------- */
+function backup(){
+  let b = new Blob([JSON.stringify(d)], {type: 'application/json'}), a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = 'al-sayyed-poultry-backup-' + today() + '.json';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function restore(inp){
+  let f = inp.files[0]; if(!f) return;
+  let r = new FileReader();
+  r.onload = () => {
+    try{
+      let j = JSON.parse(r.result);
+      if(!j || !Array.isArray(j.eggs) || !Array.isArray(j.sales)) throw 0;
+      if(!confirm(user ? 'Backup ka data maujooda data ke saath mil jayega. Jari rakhein?' : 'Maujooda data ki jagah backup ka data aa jayega. Jari rakhein?')) return;
+      d = fix(user ? mergeData(d, fix(j)) : j); save(); renderAll(); alert('✅ Backup wapas aa gaya.');
+    }catch(e){ alert('Ye sahi backup file nahi hai.'); }
+    inp.value = '';
+  };
+  r.readAsText(f);
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA7dqq5T1NzSAHXdLgwKwcU-2jRXlvSoBU",
+  authDomain: "al-sayyed-mobile.firebaseapp.com",
+  projectId: "al-sayyed-mobile",
+  storageBucket: "al-sayyed-mobile.firebasestorage.app",
+  messagingSenderId: "301005324209",
+  appId: "1:301005324209:web:60dc847f03f6826fd00790"
+};
+
+/* ---------- cloud sync (Firebase) ---------- */
+try{
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth(); db = firebase.firestore(); fbOK = true;
+  auth.onAuthStateChanged(u => { user = u; cloudUI(); if(u) syncNow(); });
+}catch(e){ console.warn('Firebase load nahi hua — app local mode mein chalegi'); }
+
+function mergeData(a, b){
+  let out = {lastRate: a.lastRate || b.lastRate || 0, del: {}}, cut = Date.now() - 365 * 864e5;
+  [a.del, b.del].forEach(m => Object.keys(m || {}).forEach(k => { out.del[k] = Math.max(out.del[k] || 0, m[k]); }));
+  Object.keys(out.del).forEach(k => { if(out.del[k] < cut) delete out.del[k]; });
+  ['eggs','sales','pays','exps','flocks'].forEach(k => {
+    let m = {};
+    (b[k] || []).concat(a[k] || []).forEach(x => {
+      if(!x || !x.id || out.del[x.id]) return;
+      let o = m[x.id];
+      if(!o || (x.u || x.ts || 0) >= (o.u || o.ts || 0)) m[x.id] = x;
+    });
+    out[k] = Object.keys(m).map(i => m[i]);
+  });
+  return out;
+}
+async function syncNow(manual){
+  if(!fbOK || !user) { if(manual) alert('Pehle Login karein.'); return; }
+  if(!navigator.onLine){ if(manual) alert('Internet nahi hai. Internet aate hi khud sync ho jayega.'); return; }
+  if(syncing){ again = true; return; }
+  syncing = true; cloudUI();
+  try{
+    let ref = db.collection('poultry').doc(user.uid), merged = null;
+    await db.runTransaction(async tx => {
+      let snap = await tx.get(ref), remote = null;
+      if(snap.exists && snap.data().json){ try{ remote = fix(JSON.parse(snap.data().json)); }catch(e){} }
+      merged = remote ? fix(mergeData(d, remote)) : d;
+      tx.set(ref, {json: JSON.stringify(merged), t: Date.now(), ver: VER});
+    });
+    d = fix(mergeData(d, merged)); localSave();
+    lastSync = Date.now(); cloudErr = '';
+    if(JSON.stringify(d).length > 800000) cloudErr = 'Data bara ho gaya hai — backup download kar ke baat karein.';
+    renderAll();
+  }catch(e){
+    console.warn(e);
+    cloudErr = e && e.code === 'permission-denied'
+      ? 'Firebase rules mein poultry ki ijazat nahi di gayi (README / guide dekhein).'
+      : 'Sync nahi ho saka. Internet theek hote hi dobara hoga.';
+  }
+  syncing = false; cloudUI();
+  if(again){ again = false; syncNow(); }
+}
+function cloudUI(){
+  if(!$('cloud')) return;
+  $('cloud').textContent = !fbOK ? '' : !user ? '☁️✗' : syncing ? '☁️…' : cloudErr ? '☁️⚠️' : (lastSync ? '☁️✓' : '☁️');
+  $('cOut').style.display = user ? 'none' : 'block';
+  $('cIn').style.display = user ? 'block' : 'none';
+  if(user){
+    let t = lastSync ? new Date(lastSync).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : 'abhi nahi';
+    $('cStat').innerHTML = '<b style="color:var(--ok)">✓ Login: ' + esc(user.email) + '</b><div class="note">Pichla sync: ' + t + '</div>';
+  }
+  $('cMsg').textContent = !fbOK ? 'Cloud abhi load nahi hua. Internet on kar ke app refresh karein.' : cloudErr;
+}
+function authMsg(e){
+  let m = {'auth/email-already-in-use': 'Ye email pehle se bana hua hai — password check karein.', 'auth/invalid-email': 'Email sahi nahi hai.', 'auth/weak-password': 'Password kam az kam 6 harf ka rakhein.', 'auth/network-request-failed': 'Internet nahi hai.'};
+  return m[e && e.code] || 'Login nahi ho saka. Dobara try karein.';
+}
+function cloudLogin(){
+  if(!fbOK) return alert('Cloud load nahi hua. Internet on kar ke app refresh karein.');
+  let em = $('cEmail').value.trim(), pw = $('cPass').value;
+  if(!em || pw.length < 6) return alert('Email aur kam az kam 6 harf ka password likhein.');
+  auth.signInWithEmailAndPassword(em, pw).catch(err => {
+    if(['auth/user-not-found', 'auth/invalid-credential', 'auth/invalid-login-credentials'].indexOf(err.code) > -1){
+      if(confirm('Ye account nahi mila (ya password ghalat hai). Naya account banayen?'))
+        auth.createUserWithEmailAndPassword(em, pw).catch(e => alert(authMsg(e)));
+    } else alert(authMsg(err));
+  });
+}
+function cloudLogout(){
+  if(!confirm('Logout karein? Data phone mein mehfooz rahega, bas sync ruk jayega.')) return;
+  auth.signOut(); lastSync = 0; cloudErr = '';
+}
+window.addEventListener('online', () => syncNow());
+document.addEventListener('visibilitychange', () => { if(!document.hidden) syncNow(); });
+setInterval(() => { if(user && !document.hidden) syncNow(); }, 90000);
+
+/* ---------- offline + update ---------- */
+function checkUpdate(){
+  if(!navigator.onLine) return alert('Internet nahi hai. Internet on kar ke dobara dabayen.');
+  if(!navigator.serviceWorker) return alert('Ye browser offline/update support nahi karta.');
+  navigator.serviceWorker.getRegistration().then(r => r ? r.update() : null)
+    .then(() => alert('Check ho gaya. Naya version hua to upar peeli patti aa jayegi.'))
+    .catch(() => alert('Abhi check nahi ho saka.'));
+}
+if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(r => r.update().catch(() => {})).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if(had) $('upd').style.display = 'flex'; renderAll(); });
+}
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+$('eDate').value = today(); $('sDate').value = today();
+if(d.lastRate) $('sRate').value = d.lastRate;
+renderAll();
+</script>
+</body>
+</html>
