@@ -37,6 +37,7 @@ button{font:inherit;cursor:pointer}
 .row:last-child{border:0}.row small{color:var(--mut);display:block}
 .x{background:none;border:0;color:var(--red);font-size:17px;padding:4px 8px}
 .due{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums}
+.okc{color:var(--ok);font-weight:700;font-variant-numeric:tabular-nums}
 .empty{color:var(--mut);text-align:center;padding:14px 0}
 .note{font-size:12px;color:var(--mut);margin-top:6px}
 nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:6}
@@ -86,12 +87,12 @@ nav button.on{color:var(--g)}nav button.on i{transform:translateY(-1px)}
     <h3>💰 Anday ki bikri</h3>
     <label>Tareekh</label><input type="date" id="sDate">
     <label>Customer (udhaar ho to naam zaroor likhein)</label>
-    <input id="sCust" list="custList" placeholder="Khali = naqad" autocomplete="off"><datalist id="custList"></datalist>
+    <input id="sCust" list="custList" placeholder="Khali = naqad (poore paise)" autocomplete="off" oninput="calcSale()"><datalist id="custList"></datalist>
     <div class="two">
       <div><label>Kitne anday</label><input type="number" id="sQty" inputmode="numeric" min="0" oninput="calcSale()"></div>
       <div><label>Rate (ek anda)</label><input type="number" id="sRate" inputmode="decimal" min="0" oninput="calcSale()"></div>
     </div>
-    <label>Kitne paise mile</label><input type="number" id="sPaid" inputmode="decimal" min="0" oninput="paidTouched=true;calcSale()">
+    <label>Kitne paise mile (khali = 0, yani poora udhaar)</label><input type="number" id="sPaid" inputmode="decimal" min="0" placeholder="0" oninput="calcSale()">
     <div class="note" id="sNote">Total: Rs 0</div>
     <button class="btn" onclick="saveSale()">Bikri Save Karein</button>
   </div>
@@ -172,7 +173,7 @@ nav button.on{color:var(--g)}nav button.on i{transform:translateY(-1px)}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-const VER = '1.1', KEY = 'alsayyed_poultry_v1';
+const VER = '1.2', KEY = 'alsayyed_poultry_v1';
 const $ = id => document.getElementById(id);
 const rs = n => 'Rs ' + Math.round(n || 0).toLocaleString('en-US');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -229,7 +230,7 @@ function eggRow(e){
 }
 function saleRow(x){
   let tot = x.qty * x.rate, bal = tot - x.paid;
-  return `<div class="row"><div><b>💰 ${x.qty} × ${rs(x.rate)} = ${rs(tot)}</b><small>${nice(x.date)} • ${esc(x.cust || 'Naqad')}${bal > 0 ? ' • <span class="due">baqi ' + rs(bal) + '</span>' : ''}</small></div>${xbtn('sales', x.id)}</div>`;
+  return `<div class="row"><div style="flex:1;cursor:pointer" onclick="editSale('${x.id}')"><b>💰 ${x.qty} × ${rs(x.rate)} = ${rs(tot)} ✏️</b><small>${nice(x.date)} • ${esc(x.cust || 'Naqad')}${bal > 0 ? ' • <span class="due">baqi ' + rs(bal) + '</span>' : ''}</small></div>${xbtn('sales', x.id)}</div>`;
 }
 function del(k, id){
   if(!confirm('Ye entry hata dein?')) return;
@@ -296,22 +297,22 @@ function saveEgg(){
   save(); ['eQty','eBroken','eHome'].forEach(i => $(i).value = ''); renderAll();
   alert('✅ ' + qty + ' anday darj ho gaye.');
 }
+function paidOf(tot, cust, raw){ return raw === '' ? (cust ? 0 : tot) : (+raw || 0); }
 function calcSale(){
-  let q = +$('sQty').value || 0, r = +$('sRate').value || 0, tot = q * r;
-  if(!paidTouched) $('sPaid').value = tot ? tot : '';
-  let paid = $('sPaid').value === '' ? tot : +$('sPaid').value, bal = tot - paid;
-  $('sNote').innerHTML = `Total: <b>${rs(tot)}</b>` + (bal > 0 ? ` • Udhaar: <b class="due">${rs(bal)}</b>` : '') + ` • Stock baqi: ${stock()}`;
+  let q = +$('sQty').value || 0, r = +$('sRate').value || 0, tot = q * r, cust = $('sCust').value.trim();
+  let paid = paidOf(tot, cust, $('sPaid').value), bal = tot - paid;
+  $('sNote').innerHTML = `Total: <b>${rs(tot)}</b> • Mile: <b>${rs(paid)}</b>` + (bal > 0 ? ` • Baqaya: <b class="due">${rs(bal)}</b>` : '') + ` • Stock baqi: ${stock()}`;
 }
 function saveSale(){
   let q = Math.floor(+$('sQty').value || 0), r = +$('sRate').value || 0, cust = $('sCust').value.trim(), tot = q * r;
-  let paid = $('sPaid').value === '' ? tot : +$('sPaid').value;
+  let paid = paidOf(tot, cust, $('sPaid').value);
   if(q <= 0 || r <= 0) return alert('Anday aur rate dono likhein.');
   if(paid > tot) return alert('Mile huay paise total se zyada hain. Purana udhaar wapas mile to Khata se likhein.');
   if(paid < tot && !cust) return alert('Udhaar ke liye customer ka naam likhein.');
   if(q > stock() && !confirm('Stock mein sirf ' + stock() + ' anday hain. Phir bhi save karein?')) return;
   d.sales.push({id: uid(), ts: Date.now(), date: $('sDate').value || today(), cust, qty: q, rate: r, paid});
   d.lastRate = r; save();
-  $('sQty').value = ''; $('sPaid').value = ''; $('sCust').value = ''; paidTouched = false; renderAll();
+  $('sQty').value = ''; $('sPaid').value = ''; $('sCust').value = ''; renderAll();
 }
 function saveOpening(){
   let n = $('oName').value.trim(), a = +$('oAmt').value || 0;
@@ -335,29 +336,100 @@ function flockAdj(id, n){
   f.count = Math.max(0, f.count + n); f.u = Date.now(); save(); renderAll();
 }
 
-/* ---------- khata detail ---------- */
-function openKhata(i){
-  let n = names[i]; if(n == null) return;
+/* ---------- khata detail + edit ---------- */
+let curK = '', editCtx = {from: '', cust: ''};
+function openKhata(i){ if(names[i] != null) openKhataName(names[i]); }
+function openKhataName(n){
+  curK = n;
   let k = khata()[n] || 0, tx = [];
-  d.sales.filter(x => x.cust === n).forEach(x => tx.push({ts: x.ts, date: x.date, t: `${x.qty} anday × ${rs(x.rate)}`, a: x.qty * x.rate - x.paid, note: x.paid ? 'mila ' + rs(x.paid) : ''}));
-  d.pays.filter(p => p.cust === n).forEach(p => tx.push({ts: p.ts, date: p.date, t: p.amt > 0 ? 'Wasooli' : (p.note || 'Baqaya'), a: -p.amt, note: ''}));
-  tx.sort((a, b) => b.ts - a.ts);
+  d.sales.filter(x => x.cust === n).forEach(x => {
+    let t = x.qty * x.rate;
+    tx.push({ts: x.ts, date: x.date, click: `editSale('${x.id}','khata')`, t: `${x.qty} anday × ${rs(x.rate)} = ${rs(t)}`, sub: 'mile ' + rs(x.paid), a: t - x.paid});
+  });
+  d.pays.filter(p => p.cust === n).forEach(p => tx.push({ts: p.ts, date: p.date, click: `editPay('${p.id}','khata')`, t: p.amt > 0 ? 'Wasooli' : (p.note || 'Purana baqaya'), sub: '', a: -p.amt}));
+  tx.sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
   let msg = `Assalam o Alaikum ${n}, Al Sayyed Poultry ka ${rs(k)} aap par baqi hai. Meherbani karke ada kar dein. Shukriya!`;
   $('sheet').innerHTML = `<div class="row" style="border:0"><h3 style="margin:0">${esc(n)}</h3><button class="x" onclick="closeM()">✕</button></div>
     <div class="stat ${k > 0 ? 'red' : 'ok'}"><span>${k > 0 ? 'Baqi udhaar' : 'Hisab saaf / advance'}</span><b>${rs(Math.abs(k))}</b></div>
     <label>Wasooli (Rs)</label><input type="number" id="wAmt" inputmode="decimal" placeholder="Kitne paise mile">
-    <button class="btn" onclick="savePay(${i})">Wasooli Save Karein</button>
+    <button class="btn" onclick="savePay()">Wasooli Save Karein</button>
     <a href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener"><button class="btn ghost">💬 WhatsApp par yaad dahani</button></a>
-    <h3 style="margin-top:16px">Hisab ki tafseel</h3>` +
-    (tx.map(x => `<div class="row"><div><b>${esc(x.t)}</b><small>${nice(x.date)}${x.note ? ' • ' + x.note : ''}</small></div><span class="${x.a > 0 ? 'due' : ''}">${x.a > 0 ? '+' : '−'}${rs(Math.abs(x.a))}</span></div>`).join('') || '<div class="empty">Koi entry nahi</div>');
+    <button class="btn ghost" onclick="renameCust()">✏️ Naam badlein / do naam milaein</button>
+    <h3 style="margin-top:16px">Hisab ki tafseel <small style="font-weight:400;color:var(--mut)">(tap karke edit)</small></h3>` +
+    (tx.map(x => `<div class="row" style="cursor:pointer" onclick="${x.click}"><div><b>${esc(x.t)} ✏️</b><small>${nice(x.date)}${x.sub ? ' • ' + x.sub : ''}</small></div><span class="${x.a > 0 ? 'due' : x.a < 0 ? 'okc' : 'okc'}">${x.a > 0 ? '+' + rs(x.a) : x.a < 0 ? '−' + rs(-x.a) : '✓ poora'}</span></div>`).join('') || '<div class="empty">Koi entry nahi</div>');
   $('modal').classList.add('on');
 }
-function savePay(i){
+function savePay(){
   let a = +$('wAmt').value || 0; if(a <= 0) return alert('Rakam likhein.');
-  d.pays.push({id: uid(), ts: Date.now(), date: today(), cust: names[i], amt: a});
-  save(); closeM(); renderAll();
+  d.pays.push({id: uid(), ts: Date.now(), date: today(), cust: curK, amt: a});
+  save(); renderAll(); openKhataName(curK);
+}
+function renameCust(){
+  let nn = prompt('Naya naam likhein.\n(Kisi doosre customer ka naam likhein to dono ka hisab mil jayega)', curK);
+  if(nn == null) return; nn = nn.trim(); if(!nn || nn === curK) return;
+  let now = Date.now();
+  d.sales.forEach(x => { if(x.cust === curK){ x.cust = nn; x.u = now; } });
+  d.pays.forEach(x => { if(x.cust === curK){ x.cust = nn; x.u = now; } });
+  save(); renderAll(); openKhataName(nn);
 }
 function closeM(){ $('modal').classList.remove('on'); }
+function closeEdit(){ closeM(); if(editCtx.from === 'khata' && editCtx.cust) openKhataName(editCtx.cust); }
+function finishEdit(cust){ closeM(); renderAll(); if(editCtx.from === 'khata' && cust) openKhataName(cust); }
+
+function editSale(id, from){
+  let x = d.sales.find(s => s.id === id); if(!x) return;
+  editCtx = {from: from || '', cust: x.cust};
+  $('sheet').innerHTML = `<div class="row" style="border:0"><h3 style="margin:0">Bikri edit karein</h3><button class="x" onclick="closeEdit()">✕</button></div>
+    <label>Tareekh</label><input type="date" id="mDate" value="${x.date}">
+    <label>Customer (khali = naqad)</label><input id="mCust" list="custList" value="${esc(x.cust)}" autocomplete="off">
+    <div class="two">
+      <div><label>Kitne anday</label><input type="number" id="mQty" inputmode="numeric" value="${x.qty}" oninput="calcEdit()"></div>
+      <div><label>Rate (ek anda)</label><input type="number" id="mRate" inputmode="decimal" value="${x.rate}" oninput="calcEdit()"></div>
+    </div>
+    <label>Kitne paise mile</label><input type="number" id="mPaid" inputmode="decimal" value="${x.paid}" oninput="calcEdit()">
+    <div class="note" id="mNote"></div>
+    <button class="btn" onclick="saveSaleEdit('${x.id}')">Save Karein</button>
+    <button class="btn ghost" style="color:var(--red)" onclick="delFromModal('sales','${x.id}')">🗑️ Ye entry hatayen</button>`;
+  $('modal').classList.add('on'); calcEdit();
+}
+function calcEdit(){
+  let q = +$('mQty').value || 0, r = +$('mRate').value || 0, tot = q * r, p = $('mPaid').value === '' ? 0 : +$('mPaid').value, bal = tot - p;
+  $('mNote').innerHTML = `Total: <b>${rs(tot)}</b> • Mile: <b>${rs(p)}</b>` + (bal > 0 ? ` • Baqaya: <b class="due">${rs(bal)}</b>` : bal < 0 ? ' • <b class="due">paise zyada hain</b>' : '');
+}
+function saveSaleEdit(id){
+  let x = d.sales.find(s => s.id === id); if(!x) return closeM();
+  let q = Math.floor(+$('mQty').value || 0), r = +$('mRate').value || 0, cust = $('mCust').value.trim();
+  let tot = q * r, paid = $('mPaid').value === '' ? 0 : (+$('mPaid').value || 0);
+  if(q <= 0 || r <= 0) return alert('Anday aur rate dono likhein.');
+  if(paid > tot) return alert('Mile huay paise total se zyada hain.');
+  if(paid < tot && !cust) return alert('Udhaar ke liye customer ka naam likhein.');
+  x.date = $('mDate').value || x.date; x.cust = cust; x.qty = q; x.rate = r; x.paid = paid; x.u = Date.now();
+  save(); finishEdit(cust);
+}
+function editPay(id, from){
+  let p = d.pays.find(x => x.id === id); if(!p) return;
+  editCtx = {from: from || '', cust: p.cust};
+  $('sheet').innerHTML = `<div class="row" style="border:0"><h3 style="margin:0">Wasooli / baqaya edit karein</h3><button class="x" onclick="closeEdit()">✕</button></div>
+    <label>Tareekh</label><input type="date" id="mDate" value="${p.date}">
+    <label>Customer</label><input id="mCust" list="custList" value="${esc(p.cust)}" autocomplete="off">
+    <label>Qism</label><select id="mType"><option value="pay"${p.amt > 0 ? ' selected' : ''}>Wasooli (paise mile)</option><option value="op"${p.amt < 0 ? ' selected' : ''}>Purana baqaya (customer ne dene hain)</option></select>
+    <label>Rakam (Rs)</label><input type="number" id="mAmt" inputmode="decimal" value="${Math.abs(p.amt)}">
+    <button class="btn" onclick="savePayEdit('${p.id}')">Save Karein</button>
+    <button class="btn ghost" style="color:var(--red)" onclick="delFromModal('pays','${p.id}')">🗑️ Ye entry hatayen</button>`;
+  $('modal').classList.add('on');
+}
+function savePayEdit(id){
+  let p = d.pays.find(x => x.id === id); if(!p) return closeM();
+  let a = +$('mAmt').value || 0, cust = $('mCust').value.trim();
+  if(a <= 0 || !cust) return alert('Customer ka naam aur rakam likhein.');
+  p.date = $('mDate').value || p.date; p.cust = cust; p.amt = $('mType').value === 'pay' ? a : -a; p.u = Date.now();
+  save(); finishEdit(cust);
+}
+function delFromModal(k, id){
+  if(!confirm('Ye entry hata dein?')) return;
+  d[k] = d[k].filter(x => x.id !== id); d.del[id] = Date.now(); save(); closeM(); renderAll();
+  if(editCtx.from === 'khata' && editCtx.cust && (khata()[editCtx.cust] != null)) openKhataName(editCtx.cust);
+}
 
 /* ---------- backup ---------- */
 function backup(){

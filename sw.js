@@ -1,5 +1,5 @@
 /* Al Sayyed Poultry — Service Worker (offline fallback) */
-const CACHE = 'poultry-v1.1';
+const CACHE = 'poultry-v1.2';
 const SDK = ['app', 'auth', 'firestore'].map(n => 'https://www.gstatic.com/firebasejs/10.12.2/firebase-' + n + '-compat.js');
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon.svg'];
 
